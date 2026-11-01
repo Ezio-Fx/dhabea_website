@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة الضبع الذكية</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: radial-gradient(circle at center, #064e3b, #022c22, #000000);
+    font-family: 'Cairo', sans-serif;
+    color: #f0fdf4;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .page { display: none; width: 100%; max-width: 900px; padding: 20px; }
+  .active { display: block; }
+  
+  .glass-card {
+    background: rgba(6, 78, 59, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    padding: 35px;
+    border-radius: 20px;
+    box-shadow: 0 0 35px rgba(34, 197, 94, 0.3);
+    text-align: center;
+    width: 100%;
+    margin: auto;
+  }
+  h1 { color: #4ade80; font-size: 28px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(74, 222, 128, 0.6); }
+  h2 { color: #4ade80; font-size: 20px; border-bottom: 1px solid rgba(34, 197, 94, 0.3); padding-bottom: 8px; margin-top: 0; text-align: right; }
+  p { color: #bbf7d0; font-size: 15px; margin-bottom: 25px; }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  .btn {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+    display: inline-block;
+    text-decoration: none;
+  }
+  .btn:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 0 25px rgba(34, 197, 94, 0.8); }
+
+  .chat-box, .comments-box {
+    background: #022c22;
+    border: 1px solid #22c55e;
+    border-radius: 12px;
+    height: 160px;
+    padding: 12px;
+    overflow-y: auto;
+    text-align: right;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #22c55e;
+    background: #064e3b;
+    color: white;
+    outline: none;
+    margin-bottom: 10px;
+  }
+  .comment-item {
+    background: rgba(34, 197, 94, 0.15);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border-right: 3px solid #4ade80;
+  }
+</style>
+</head>
+<body>
+
+  <!-- 1. صفحة الهبوط / الدخول -->
+  <div id="landing-page" class="page active">
+    <div class="glass-card" style="max-width: 450px;">
+      <h1>منصة الضبع</h1>
+      <p>أهلاً بكم في المنتج رقم واحد في خدمتكم</p>
+      <button class="btn" onclick="navigateTo('dashboard-page')">استكشف النظام 🚀</button>
+    </div>
+  </div>
+
+  <!-- 2. صفحة الخدمات والوظائف التفاعلية -->
+  <div id="dashboard-page" class="page">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <h1 style="margin:0;">منصة الضبع - لوحة التحكم</h1>
+      <button class="btn" onclick="navigateTo('landing-page')" style="padding:8px 15px; font-size:14px;">الرئيسية 🏠</button>
+    </div>
+
+    <div class="grid-container">
+      
+      <!-- قسم التحدث مع الذكاء الاصطناعي -->
+      <div class="glass-card" style="text-align:right;">
+        <h2>🤖 التحدث مع الذكاء الاصطناعي</h2>
+        <div class="chat-box" id="chat-messages">
+          <p style="color:#86efac; margin:0 0 5px 0;"><strong>ضبع AI:</strong> أهلاً بك! كيف يمكنني مساعدتك؟</p>
+        </div>
+        <input type="text" id="chat-input" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendChat()">
+        <button class="btn" style="width:100%;" onclick="sendChat()">إرسال</button>
+      </div>
+
+      <!-- قسم مجتمع التعليقات التفاعلي -->
+      <div class="glass-card" style="text-align:right;">
+        <h2>💬 مجتمع التعليقات</h2>
+        <div class="comments-box" id="comments-list">
+          {% for comment in comments %}
+            <div class="comment-item">{{ comment }}</div>
+          {% endfor %}
+        </div>
+        <input type="text" id="comment-input" placeholder="أضف تعليقك هنا..." onkeypress="if(event.key==='Enter') addComment()">
+        <button class="btn" style="width:100%;" onclick="addComment()">نشر التعليق</button>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // التنقل بين الصفحات
+  function navigateTo(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+  }
+
+  // إضافة تعليق وحفظه في السيرفر
+  function addComment() {
+    const input = document.getElementById('comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    fetch('/api/comment', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({comment: text})
+    })
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById('comments-list');
+      box.innerHTML += `<div class="comment-item">${text}</div>`;
+      box.scrollTop = box.scrollHeight;
+      input.value = '';
+    });
+  }
+
+  // التحدث مع الذكاء الاصطناعي
+  function sendChat() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const box = document.getElementById('chat-messages');
+    box.innerHTML += `<p style="color:#ffffff; margin:5px 0;"><strong>أنت:</strong> ${msg}</p>`;
+    input.value = '';
+
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    })
+    .then(res => res.json())
+    .then(data => {
+      box.innerHTML += `<p style="color:#86efac; margin:5px 0;"><strong>ضبع AI:</strong> ${data.reply}</p>`;
+      box.scrollTop = box.scrollHeight;
+    });
+  }
+</script>
+
+</body>
+</html>
