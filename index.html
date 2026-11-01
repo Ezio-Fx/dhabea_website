@@ -87,6 +87,7 @@
     border-radius: 6px;
     margin-bottom: 8px;
     border-right: 3px solid #4ade80;
+    word-break: break-word;
   }
 </style>
 </head>
@@ -124,9 +125,7 @@
       <div class="glass-card" style="text-align:right;">
         <h2>💬 مجتمع التعليقات</h2>
         <div class="comments-box" id="comments-list">
-          {% for comment in comments %}
-            <div class="comment-item">{{ comment }}</div>
-          {% endfor %}
+          <!-- ستظهر التعليقات الحقيقية هنا تلقائياً من Firebase -->
         </div>
         <input type="text" id="comment-input" placeholder="أضف تعليقك هنا..." onkeypress="if(event.key==='Enter') addComment()">
         <button class="btn" style="width:100%;" onclick="addComment()">نشر التعليق</button>
@@ -135,6 +134,10 @@
     </div>
   </div>
 
+  <!-- استدعاء مكتبات Firebase (SDK v9 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
 <script>
   // التنقل بين الصفحات
   function navigateTo(pageId) {
@@ -142,27 +145,59 @@
     document.getElementById(pageId).classList.add('active');
   }
 
-  // إضافة تعليق وحفظه في السيرفر
+  // 1. إعدادات قاعدة البيانات الخاصة بمشروعك
+  const firebaseConfig = {
+    apiKey: "AIzaSyBeufFl1br7Hv_iXSulYXUu-fvJOaonzk",
+    authDomain: "dhabea-website.firebaseapp.com",
+    databaseURL: "https://dhabea-website-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dhabea-website",
+    storageBucket: "dhabea-website.appspot.com",
+    messagingSenderId: "415538507707",
+    appId: "1:415538507707:web:10afe996878ef78f681e9e"
+  };
+
+  // 2. تهيئة Firebase وربط قاعدة البيانات
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // 3. إضافة تعليق جديد وحفظه في Firebase Realtime Database
   function addComment() {
     const input = document.getElementById('comment-input');
     const text = input.value.trim();
     if (!text) return;
 
-    fetch('/api/comment', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({comment: text})
-    })
-    .then(res => res.json())
-    .then(data => {
-      const box = document.getElementById('comments-list');
-      box.innerHTML += `<div class="comment-item">${text}</div>`;
-      box.scrollTop = box.scrollHeight;
-      input.value = '';
+    // حفظ التعليق تحت عقدة "comments"
+    database.ref('comments').push({
+      text: text,
+      timestamp: Date.now()
+    }).then(() => {
+      input.value = ''; // تفريغ حقل النص
+    }).catch(err => {
+      console.error("خطأ في حفظ التعليق:", err);
     });
   }
 
-  // التحدث مع الذكاء الاصطناعي
+  // 4. الاستماع الفوري للتعليقات وعرضها مباشرة لجميع الزوار
+  database.ref('comments').on('value', (snapshot) => {
+    const box = document.getElementById('comments-list');
+    box.innerHTML = ''; // مسح القائمة الحالية وإعادة بنائها
+
+    const data = snapshot.val();
+    if (data) {
+      Object.keys(data).forEach((key) => {
+        const item = data[key];
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comment-item';
+        commentDiv.textContent = item.text;
+        box.appendChild(commentDiv);
+      });
+      box.scrollTop = box.scrollHeight; // التمرير التلقائي لأسفل
+    } else {
+      box.innerHTML = '<p style="color:#a7f3d0; text-align:center; margin-top:20px;">لا توجد تعليقات بعد. كن أول من يعلق!</p>';
+    }
+  });
+
+  // التحدث مع الذكاء الاصطناعي التجريبي local
   function sendChat() {
     const input = document.getElementById('chat-input');
     const msg = input.value.trim();
@@ -172,16 +207,11 @@
     box.innerHTML += `<p style="color:#ffffff; margin:5px 0;"><strong>أنت:</strong> ${msg}</p>`;
     input.value = '';
 
-    fetch('/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: msg})
-    })
-    .then(res => res.json())
-    .then(data => {
-      box.innerHTML += `<p style="color:#86efac; margin:5px 0;"><strong>ضبع AI:</strong> ${data.reply}</p>`;
+    // رد محاكاة تلقائي بسيط
+    setTimeout(() => {
+      box.innerHTML += `<p style="color:#86efac; margin:5px 0;"><strong>ضبع AI:</strong> تم استقبال رسالتك بنجاح!</p>`;
       box.scrollTop = box.scrollHeight;
-    });
+    }, 600);
   }
 </script>
 
