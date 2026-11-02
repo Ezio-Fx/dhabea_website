@@ -18,6 +18,39 @@
             justify-content: center;
             min-height: 90vh;
         }
+        .config-box {
+            width: 100%;
+            max-width: 650px;
+            background: rgba(2, 44, 34, 0.8);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            border-radius: 12px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .config-box input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            background: rgba(0, 0, 0, 0.5);
+            color: #4ade80;
+            font-family: 'Cairo', sans-serif;
+            font-size: 13px;
+            outline: none;
+        }
+        .config-box button {
+            padding: 8px 14px;
+            background: #15803d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
         .chat-container {
             width: 100%;
             max-width: 650px;
@@ -111,7 +144,7 @@
             border-color: #4ade80;
             box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
         }
-        button {
+        button.send-btn {
             padding: 12px 20px;
             background: linear-gradient(135deg, #22c55e, #15803d);
             color: white;
@@ -124,13 +157,19 @@
             box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
             transition: 0.3s;
         }
-        button:hover {
+        button.send-btn:hover {
             opacity: 0.9;
             transform: translateY(-2px);
         }
     </style>
 </head>
 <body>
+
+<!-- شريط ربط رابط السيرفر المؤقت من Colab -->
+<div class="config-box">
+    <input type="text" id="serverUrl" placeholder="أصصق رابط Colab هنا (مثال: https://xxxx.trycloudflare.com)">
+    <button onclick="saveServerUrl()">حفظ الرابط</button>
+</div>
 
 <div class="chat-container">
     <div class="header">
@@ -140,23 +179,45 @@
 
     <div class="chat-box" id="chatBox">
         <div class="message ai-message">
-            <strong>ضبع AI:</strong> أهلاً بك! أنا مدعوم بـ Google Gemini ومستعد لمساعدتك.
+            <strong>ضبع AI:</strong> أهلاً بك! أنا مدعوم بـ Google Gemini ومستعد لمساعدتك. قم بإدخال رابط سيرفر Colab في الأعلى وابدأ المحادثة.
         </div>
     </div>
 
     <div class="input-group">
         <input type="text" id="userInput" placeholder="اكتب رسالتك هنا..." onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()">إرسال الرسالة</button>
+        <button class="send-btn" onclick="sendMessage()">إرسال الرسالة</button>
     </div>
 </div>
 
 <script>
+    // استرجاع الرابط المحفوظ مسبقاً في المتصفح
+    window.onload = function() {
+        const savedUrl = localStorage.getItem('colab_server_url');
+        if (savedUrl) {
+            document.getElementById('serverUrl').value = savedUrl;
+        }
+    };
+
+    function saveServerUrl() {
+        let url = document.getElementById('serverUrl').value.trim();
+        if (url.endsWith('/')) {
+            url = url.slice(0, -1); // إزالة الشرطة المائلة الأخيرة إن وجدت لضمان صحة المسار
+        }
+        localStorage.setItem('colab_server_url', url);
+        alert("تم حفظ رابط السيرفر بنجاح! يمكنك البدء بالتحدث مع الـ AI الآن.");
+    }
+
     async function sendMessage() {
+        const serverUrl = localStorage.getItem('colab_server_url');
+        if (!serverUrl) {
+            alert("الرجاء إدخال وحفظ رابط سيرفر Google Colab في الخانة بالأعلى أولاً!");
+            return;
+        }
+
         const inputField = document.getElementById('userInput');
         const chatBox = document.getElementById('chatBox');
         const prompt = inputField.value.trim();
 
-        // 🛑 التحقق من أن الرسالة صحيحة وليست فارغة أو قصيرة جدًا
         if (!prompt || prompt.length < 2) {
             alert("الرجاء كتابة رسالة صحيحة وذات معنى (حرفين على الأقل).");
             return;
@@ -178,7 +239,8 @@
         chatBox.scrollTop = chatBox.scrollHeight;
 
         try {
-            const response = await fetch('/api/ai-chat', {
+            // الاتصال المباشر برابط Colab الخارجي
+            const response = await fetch(`${serverUrl}/api/ai-chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: prompt })
@@ -201,7 +263,7 @@
             const errorDiv = document.createElement('div');
             errorDiv.className = 'message ai-message';
             errorDiv.style.color = '#ef4444';
-            errorDiv.innerHTML = `<strong>ضبع AI:</strong> عذراً، حدث خطأ أثناء الاتصال بالسيرفر.`;
+            errorDiv.innerHTML = `<strong>ضبع AI:</strong> عذراً، تعذر الاتصال بالسيرفر. تأكد من تشغيل خلايا Google Colab وصحة الرابط.`;
             chatBox.appendChild(errorDiv);
         }
 
